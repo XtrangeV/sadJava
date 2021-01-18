@@ -1,4 +1,6 @@
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -18,13 +20,27 @@ import javax.swing.border.TitledBorder;
 
 public class sniffer
 {
-    String ans;
+
+    //String mydev = "USB3.0 to Gigabit Ethernet Adapt";
+    static String wireless_dev = "{84CA6333-9278-4150-81C2-94D3B097DFA6}";
+
+
+    static String filter_s_ip = null;
+    static String filter_d_ip = null;
+    static String filter_pro = null;
+
+
+
+    static int count = 0;
     static String get_id;
     static String[] Detail = new String[30];
     static String[] sadtitle = {"Source","Dest","Ipv","Length","Protocol"};
     static Object[][] sadt = new Object[30][5];
     static JTable table = new JTable(sadt,sadtitle);
     static JTextArea jta = new JTextArea(30,30);
+    static JButton bt1 = new JButton("源地址过滤");
+    static JButton bt2 = new JButton("目的地址过滤");
+    static JButton bt3 = new JButton("协议过滤");
     public static void init()
     {
         JFrame frame = new JFrame();
@@ -32,18 +48,29 @@ public class sniffer
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         JPanel panel = new JPanel();
-
+        JPanel paneltop = new JPanel();
         panel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createEtchedBorder(), "sadshark", TitledBorder.CENTER,
                 TitledBorder.TOP));
 
-
+        paneltop.setLayout(new GridLayout(1,1));
         panel.setLayout(new GridLayout(2,1));
+
+        paneltop.add(bt1);
+        paneltop.add(bt2);
+        paneltop.add(bt3);
+        //panel.add(new JScrollPane(paneltop));
         panel.add(new JScrollPane(table));
         panel.add(new JScrollPane(jta));
 
 
-        frame.add(panel);
+        //frame.setLayout(new BoxLayout(frame,BoxLayout.Y_AXIS));
+        //paneltop.setSize(100,10);
+        frame.setLayout(new BorderLayout());
+
+        frame.add(paneltop,BorderLayout.NORTH);
+        frame.add(panel,BorderLayout.CENTER);
+        frame.setTitle("sadShark");
         frame.pack();
         frame.setVisible(true);
     }
@@ -75,7 +102,7 @@ public class sniffer
             String description =
                     (device.getDescription() != null) ? device.getDescription()
                             : "No description available";
-            if(description.equals("USB3.0 to Gigabit Ethernet Adapt"))
+            if(device.getName().contains(wireless_dev)) //wireless
             {
                 isthis = i;
             }
@@ -85,7 +112,7 @@ public class sniffer
 
         PcapIf device = alldevs.get(isthis);
         System.out
-                .printf("\nChoosing '%s' on your behalf:\n",
+                .printf("\nChoosing '%s' :\n",
                         (device.getDescription() != null) ? device.getDescription()
                                 : device.getName());
 
@@ -123,6 +150,54 @@ public class sniffer
                 }
             }
         });
+        //String rules
+
+        bt1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                filter_s_ip = JOptionPane.showInputDialog("输入要过滤的源地址: ");
+                for(int i =0;i<5;i++)
+                {
+                    for(int j =0;j<30;j++)
+                    {
+                        table.setValueAt(" ",j,i);
+                    }
+                }
+                count=0;
+
+            }
+        });
+        bt2.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                filter_d_ip = JOptionPane.showInputDialog("输入要过滤的源地址: ");
+                for(int i =0;i<5;i++)
+                {
+                    for(int j =0;j<30;j++)
+                    {
+                        table.setValueAt(" ",j,i);
+                    }
+                }
+                count=0;
+            }
+        });
+
+        bt3.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                filter_pro = JOptionPane.showInputDialog("输入要过滤的协议: ");
+                for(int i =0;i<5;i++)
+                {
+                    for(int j =0;j<30;j++)
+                    {
+                        table.setValueAt(" ",j,i);
+                    }
+                }
+                count=0;
+            }
+        });
         PcapPacketHandler<String> jpacketHandler = new PcapPacketHandler<String>()
         {
             /*public void nextPacket(PcapPacket packet, String user)
@@ -148,7 +223,7 @@ public class sniffer
             final Tcp tcp = new Tcp();
             final Http http = new Http();
             final Ip4 ip = new Ip4();
-            int count = 0;
+
              int allcount = 0;
             public String checkProtocol(PcapPacket pak)
             {
@@ -199,16 +274,20 @@ public class sniffer
                         String prot = checkProtocol(packet);
                         //System.out.println("sou: "+sourceIP+" des: "+destinationIP+" IP version: "+ip.version()+" Length: "+ip.length()+" Protocol: "+prot);
                         //ans = "sou: "+sourceIP+" des: "+destinationIP+" IP version: "+ip.version()+" Length: "+ip.length()+" Protocol: "+prot;
-                        table.setValueAt(sourceIP,count,0);
-                        table.setValueAt(destinationIP,count,1);
-                        table.setValueAt(ip.version(),count,2);
-                        table.setValueAt(ip.length(),count,3);
-                        table.setValueAt(prot,count,4);
-                        allcount++;
-                        Detail[count] = tcp.getPacket().toString();
-                        //System.out.println(Detail[count]);
-                        count++;
-                        count %= 30;
+                        if(( sourceIP.equals(filter_s_ip) || sourceIP.equals("") ||filter_s_ip==null) && ( destinationIP.equals(filter_d_ip) || destinationIP.equals("") ||filter_d_ip==null ) && ( prot.equals(filter_pro) || prot.equals("") || filter_pro==null ) )
+                        //System.out.println(( sourceIP.equals(filter_s_ip)) || filter_s_ip==null);
+                        {
+                            table.setValueAt(sourceIP, count, 0);
+                            table.setValueAt(destinationIP, count, 1);
+                            table.setValueAt(ip.version(), count, 2);
+                            table.setValueAt(ip.length(), count, 3);
+                            table.setValueAt(prot, count, 4);
+                            allcount++;
+                            Detail[count] = tcp.getPacket().toString();
+                            //System.out.println(Detail[count]);
+                            count++;
+                            count %= 30;
+                        }
 
                         //System.out.println(table.columnAtPoint(new Point()));
                     }
