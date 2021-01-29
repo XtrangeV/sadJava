@@ -29,8 +29,8 @@ public class sniffer
     static String filter_d_ip = null;
     static String filter_pro = null;
 
-
-
+    static int http_count = 0;
+    public static int https_count = 0;
     static int count = 0;
     static String get_id;
     static String[] Detail = new String[30];
@@ -41,6 +41,7 @@ public class sniffer
     static JButton bt1 = new JButton("源地址过滤");
     static JButton bt2 = new JButton("目的地址过滤");
     static JButton bt3 = new JButton("协议过滤");
+    static JButton bt4 = new JButton("统计https");
     public static void init()
     {
         JFrame frame = new JFrame();
@@ -59,7 +60,8 @@ public class sniffer
         paneltop.add(bt1);
         paneltop.add(bt2);
         paneltop.add(bt3);
-        //panel.add(new JScrollPane(paneltop));
+        paneltop.add(bt4);
+
         panel.add(new JScrollPane(table));
         panel.add(new JScrollPane(jta));
 
@@ -143,9 +145,7 @@ public class sniffer
                     int pos_line = table.rowAtPoint(mousepoint);
 
                     get_id = (String)table.getValueAt(pos_line,0);
-                    //System.out.println(get_id);
-                    //System.out.println(pos_line);
-                    //System.out.println(Detail[pos_line]);
+
                     jta.setText(Detail[pos_line]);
                 }
             }
@@ -172,7 +172,7 @@ public class sniffer
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                filter_d_ip = JOptionPane.showInputDialog("输入要过滤的源地址: ");
+                filter_d_ip = JOptionPane.showInputDialog("输入要过滤的目的地址: ");
                 for(int i =0;i<5;i++)
                 {
                     for(int j =0;j<30;j++)
@@ -186,7 +186,8 @@ public class sniffer
 
         bt3.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent e)
+            {
                 filter_pro = JOptionPane.showInputDialog("输入要过滤的协议: ");
                 for(int i =0;i<5;i++)
                 {
@@ -198,33 +199,19 @@ public class sniffer
                 count=0;
             }
         });
+        bt4.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new Count_window();
+            }
+        });
         PcapPacketHandler<String> jpacketHandler = new PcapPacketHandler<String>()
         {
-            /*public void nextPacket(PcapPacket packet, String user)
-            {
-                final Tcp tcp = new Tcp();
-                final Http http = new Http();
-                final Ip4 ip = new Ip4();
-                final Udp udp = new Udp();
-                if(packet.hasHeader(tcp))
-                {
-                    System.out.println(tcp.source());
-                }
-                System.out.printf("Received packet at %s caplen=%-4d len=%-4d %s\n",
-                        new Date(packet.getCaptureHeader().timestampInMillis()),
-                        packet.getCaptureHeader().caplen(),  // 实际捕获的长度
-                        packet.getCaptureHeader().wirelen(), // 原来长度
-                        user                                 // 用户信息
-
-
-                );
-
-            }*/
             final Tcp tcp = new Tcp();
             final Http http = new Http();
             final Ip4 ip = new Ip4();
 
-             int allcount = 0;
+            int allcount = 0;
             public String checkProtocol(PcapPacket pak)
             {
                 Tcp tcp = new Tcp();
@@ -240,13 +227,15 @@ public class sniffer
                     {
                         protocol = "Ftp";
                     }
-                    else if(tcp.source() == 25 || tcp.destination() == 25)
+                    else if(tcp.source() == 25 || tcp.destination() == 25 || tcp.source() == 143 || tcp.destination() == 143)
                     {
                         protocol = "SMTP";
                     }
                     else if(tcp.source() == 443 || tcp.destination() == 443)
                     {
                         protocol = "Https";
+                        https_count++;
+                        System.out.println(https_count);
                     }
                     else
                     {
@@ -261,8 +250,14 @@ public class sniffer
 
                 byte[] sIP = new byte[4];
                 byte[] dIP = new byte[4];
+                if(packet.hasHeader(http))
+                {
+                    http_count++;
+                    System.out.println(http_count);
+                }
                 if(packet.hasHeader(tcp))
                 {
+
                     packet.getHeader(tcp);
                     if(packet.hasHeader(ip))
                     {
@@ -284,7 +279,7 @@ public class sniffer
                             table.setValueAt(prot, count, 4);
                             allcount++;
                             Detail[count] = tcp.getPacket().toString();
-                            //System.out.println(Detail[count]);
+                            System.out.println(Detail[count]);
                             count++;
                             count %= 30;
                         }
