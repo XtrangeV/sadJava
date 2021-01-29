@@ -1,1 +1,0 @@
-C:\Users\Xtran\.jdks\azul-13.0.5.1\bin\java.exe "-javaagent:E:\IntelliJ IDEA 2020.3\lib\idea_rt.jar=1987:E:\IntelliJ IDEA 2020.3\bin" -Dfile.encoding=UTF-8 -classpath E:\sad\finsniffer\out\production\finsniffer;E:\sad\finsniffer\jnetpcap-1.4.r1425-1.win64\jnetpcap-1.4.r1425\jnetpcap.jar sniffer
